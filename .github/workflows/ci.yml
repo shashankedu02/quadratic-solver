@@ -1,0 +1,25 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Maths tests
+        run: node --test tests/*.test.js
+      - name: Every module the page loads exists and parses
+        run: |
+          node --input-type=module -e "await import('./src/quadratic.js'); console.log('quadratic.js ok')"
+          node --check src/app.js
+          grep -q 'src="src/app.js"' index.html
