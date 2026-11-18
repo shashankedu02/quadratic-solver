@@ -3,39 +3,129 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Quadratic Calculator</title>
+  <title>Quadratic Solver · roots, vertex and an interactive graph</title>
+  <meta name="description" content="Solve ax² + bx + c = 0 with numerically stable roots, see the vertex, forms and working steps, and reshape the parabola by dragging it.">
+  <meta name="theme-color" content="#0b0d17">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' x2='1'%3E%3Cstop offset='0' stop-color='%237c6cff'/%3E%3Cstop offset='1' stop-color='%2322d3ee'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='9' fill='%230b0d17'/%3E%3Cpath d='M6 8c4 18 16 18 20 0' stroke='url(%23g)' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="styles.css">
+  <script type="module" src="src/app.js"></script>
 </head>
 <body>
-  <main class="calculator">
-    <p class="eyebrow">Math tool</p>
-    <h1>Quadratic Calculator</h1>
-    <p class="intro">Solve and explore equations in the form <strong>ax² + bx + c = 0</strong>.</p>
+  <div class="aura" aria-hidden="true"></div>
 
-    <form id="quadratic-form">
-      <div class="coefficients">
-        <label>a <input id="a" name="a" type="number" step="any" value="1" required></label>
-        <label>b <input id="b" name="b" type="number" step="any" value="-5" required></label>
-        <label>c <input id="c" name="c" type="number" step="any" value="6" required></label>
-      </div>
-      <button type="submit">Solve equation</button>
-    </form>
+  <header class="topbar">
+    <div class="brand">
+      <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><path d="M6 8c4 18 16 18 20 0"/></svg>
+      <span>Quadratic Solver</span>
+    </div>
+    <button type="button" class="ghost" id="copy-link" aria-live="polite">Copy link</button>
+  </header>
 
-    <section class="graph-panel" aria-labelledby="graph-title">
-      <div class="graph-heading">
-        <div>
-          <h2 id="graph-title">Interactive graph</h2>
-          <p>Drag any purple point up or down to change the equation.</p>
+  <main class="layout">
+    <section class="panel controls" aria-labelledby="equation-title">
+      <p class="eyebrow" id="equation-title">Equation</p>
+      <p class="equation" id="equation" aria-live="polite">x² − 5x + 6 = 0</p>
+
+      <form id="coefficients" class="coefficients" novalidate>
+        <div class="field" data-name="a">
+          <label for="a"><span class="var">a</span><span class="hint">x² term</span></label>
+          <div class="stepper">
+            <button type="button" class="step" data-step="-1" aria-label="Decrease a">−</button>
+            <input id="a" name="a" inputmode="decimal" autocomplete="off" spellcheck="false" value="1">
+            <button type="button" class="step" data-step="1" aria-label="Increase a">+</button>
+          </div>
         </div>
-        <span class="legend"><i></i> curve controls</span>
+        <div class="field" data-name="b">
+          <label for="b"><span class="var">b</span><span class="hint">x term</span></label>
+          <div class="stepper">
+            <button type="button" class="step" data-step="-1" aria-label="Decrease b">−</button>
+            <input id="b" name="b" inputmode="decimal" autocomplete="off" spellcheck="false" value="-5">
+            <button type="button" class="step" data-step="1" aria-label="Increase b">+</button>
+          </div>
+        </div>
+        <div class="field" data-name="c">
+          <label for="c"><span class="var">c</span><span class="hint">constant</span></label>
+          <div class="stepper">
+            <button type="button" class="step" data-step="-1" aria-label="Decrease c">−</button>
+            <input id="c" name="c" inputmode="decimal" autocomplete="off" spellcheck="false" value="6">
+            <button type="button" class="step" data-step="1" aria-label="Increase c">+</button>
+          </div>
+        </div>
+      </form>
+      <p class="input-error" id="input-error" role="alert"></p>
+
+      <div class="presets" role="group" aria-label="Examples">
+        <p class="eyebrow">Try</p>
+        <button type="button" class="chip" data-preset="1,-5,6">Two real roots</button>
+        <button type="button" class="chip" data-preset="1,-4,4">Repeated root</button>
+        <button type="button" class="chip" data-preset="1,2,5">Complex roots</button>
+        <button type="button" class="chip" data-preset="-0.5,1,4">Opens downward</button>
+        <button type="button" class="chip" data-preset="1,100000000,1" title="The textbook formula gets the small root wrong here">Precision test</button>
       </div>
-      <canvas id="graph" width="720" height="400" aria-label="Interactive quadratic graph"></canvas>
     </section>
 
-    <section id="result" class="result" aria-live="polite">
-      Enter coefficients and select “Solve equation”.
+    <section class="panel graph-panel" aria-labelledby="graph-title">
+      <div class="graph-head">
+        <div>
+          <p class="eyebrow" id="graph-title">Graph</p>
+          <p class="muted small">Drag the <span class="key-vertex">vertex</span> to move the curve, the
+            <span class="key-shape">handle</span> to stretch it. Keyboard: focus the graph, then arrows move,
+            <kbd>Shift</kbd>+<kbd>↑</kbd>/<kbd>↓</kbd> stretch, <kbd>F</kbd> fits.</p>
+        </div>
+        <div class="toolbar" role="group" aria-label="Graph view">
+          <button type="button" class="icon" id="zoom-out" aria-label="Zoom out">−</button>
+          <button type="button" class="icon" id="zoom-in" aria-label="Zoom in">+</button>
+          <button type="button" class="ghost small-btn" id="fit">Fit</button>
+        </div>
+      </div>
+      <div class="canvas-wrap">
+        <canvas id="graph" tabindex="0" role="img" aria-label="Graph of the parabola"></canvas>
+        <div class="readout" id="readout" aria-hidden="true"></div>
+      </div>
+      <p class="notice" id="notice" role="status"></p>
+    </section>
+
+    <section class="results" id="results" aria-live="polite" aria-label="Results">
+      <article class="panel card hero" id="roots-card">
+        <p class="eyebrow">Roots</p>
+        <div class="roots" id="roots"></div>
+        <p class="muted" id="roots-note"></p>
+      </article>
+      <article class="panel card">
+        <p class="eyebrow">Discriminant</p>
+        <p class="stat" id="disc"></p>
+        <p class="muted small" id="disc-note"></p>
+      </article>
+      <article class="panel card">
+        <p class="eyebrow">Vertex</p>
+        <p class="stat" id="vertex"></p>
+        <p class="muted small" id="vertex-note"></p>
+      </article>
+      <article class="panel card">
+        <p class="eyebrow">Axis · y-intercept</p>
+        <p class="stat" id="axis"></p>
+        <p class="muted small" id="intercept"></p>
+      </article>
+      <article class="panel card span-3">
+        <p class="eyebrow">Forms</p>
+        <dl class="forms">
+          <dt>Standard</dt><dd id="form-standard"></dd>
+          <dt>Vertex</dt><dd id="form-vertex"></dd>
+          <dt>Factored</dt><dd id="form-factored"></dd>
+        </dl>
+      </article>
+      <article class="panel card full">
+        <details id="steps-box">
+          <summary><span class="eyebrow">Working</span><span class="muted small">Show the steps</span></summary>
+          <ol class="steps" id="steps"></ol>
+        </details>
+      </article>
     </section>
   </main>
-  <script src="script.js"></script>
+
+  <footer class="footer">
+    <p>Roots use the numerically stable form x₁ = q/a, x₂ = c/q, so very large or very small coefficients stay
+      accurate. Open source · <a href="https://github.com/shashankedu02/quadratic-solver">GitHub</a></p>
+  </footer>
 </body>
 </html>
